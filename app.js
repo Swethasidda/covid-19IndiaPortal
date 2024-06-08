@@ -30,10 +30,6 @@ intailizationOfDBAndServer()
 app.use(express.json())
 
 ///API1
-let user = {
-  username: 'christopher_phillips',
-  password: 'christy@123',
-}
 /// Authentication Token
 const authenticationToken = (request, response, next) => {
   let jwtToken
@@ -56,7 +52,7 @@ const authenticationToken = (request, response, next) => {
   }
 }
 
-app.post('/login/', authenticationToken, async (request, response) => {
+app.post('/login/', async (request, response) => {
   const {username, password} = request.body
   const user = `SELECT * FROM  user WHERE username = '${username}'`
   let res = await db.get(user)
@@ -64,13 +60,13 @@ app.post('/login/', authenticationToken, async (request, response) => {
     response.send('Invalid user')
     response.status(400)
   } else {
-    const isPasswordRight = await bcrypt.compare(password.res.password)
+    const isPasswordRight = await bcrypt.compare(password, res.password)
     if (isPasswordRight) {
       const payload = {
         username: username,
       }
       const token = jwt.sign(payload, 'secretKey')
-      response.send({token})
+      response.send({jwtToken: token})
     } else {
       response.status(400)
       response.send('Invalid password')
@@ -134,15 +130,15 @@ app.get(
   '/districts/:districtId/',
   authenticationToken,
   async (request, response) => {
-    let {districtID} = request.params
+    let {districtId} = request.params
     const getQuery = `
     SELECT *
     FROM district
-    WHERE district_id = '${districtID}';
+    WHERE district_id = '${districtId}';
     `
     const district = await db.get(getQuery)
     response.send({
-      districtID: district.district_id,
+      districtId: district.district_id,
       districtName: district.district_name,
       stateId: district.state_id,
       cases: district.cases,
@@ -158,10 +154,10 @@ app.delete(
   '/districts/:districtId/',
   authenticationToken,
   async (request, response) => {
-    const {districtID} = request.params
+    const {districtId} = request.params
     const getQuery = `
     DELECTE FROM district
-    WHERE district_id  = '${districtID}';
+    WHERE district_id  = '${districtId}';
     `
     await db.run(getQuery)
     response.send('District Removed')
@@ -173,7 +169,7 @@ app.put(
   ' /districts/:districtId/',
   authenticationToken,
   async (request, response) => {
-    const {districtID} = request.params
+    const {districtId} = request.params
     const bodyDtails = request.body
     const {districtName, stateId, cases, cured, active, deaths} = bodyDtails
     const getQuery = `
@@ -185,7 +181,7 @@ app.put(
     cured ='${cured}',
     active = '${active}',
     deaths = '${deaths}'
-    WHERE district_id = '${districtID}'; 
+    WHERE district_id = '${districtId}'; 
     `
     await db.run(getQuery)
     response.send('District Details Updated')

@@ -168,7 +168,7 @@ app.delete(
 
 //API7
 app.put(
-  ' /districts/:districtId/',
+  '/districts/:districtId/',
   authenticateToken,
   async (request, response) => {
     const {districtId} = request.params

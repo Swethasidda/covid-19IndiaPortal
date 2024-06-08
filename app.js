@@ -31,42 +31,42 @@ app.use(express.json())
 
 ///API1
 /// Authentication Token
-const authenticationToken = (request, response, next) => {
+const authenticateToken = (request, response, next) => {
   let jwtToken
-  const authHeader = request.headers['Authorization']
+  const authHeader = request.headers['authorization']
   if (authHeader !== undefined) {
     jwtToken = authHeader.split(' ')[1]
-    if (jwtToken === undefined) {
-      response.status(401)
-      response.send('Invalid JWT Token')
-    } else {
-      jwt.verify(jwtToken, 'secretKey', async (error, payload) => {
-        if (error) {
-          response.send('Invalid JWT Token')
-          response.status(401)
-        } else {
-          next()
-        }
-      })
-    }
+  }
+  if (jwtToken === undefined) {
+    response.status(401)
+    response.send('Invalid JWT Token')
+  } else {
+    jwt.verify(jwtToken, 'MY_SECRET_TOKEN', async (error, payload) => {
+      if (error) {
+        response.status(401)
+        response.send('Invalid JWT Token')
+      } else {
+        next()
+      }
+    })
   }
 }
 
 app.post('/login/', async (request, response) => {
   const {username, password} = request.body
   const user = `SELECT * FROM  user WHERE username = '${username}'`
-  let res = await db.get(user)
+  const res = await db.get(user)
   if (res === undefined) {
-    response.send('Invalid user')
     response.status(400)
+    response.send('Invalid user')
   } else {
     const isPasswordRight = await bcrypt.compare(password, res.password)
-    if (isPasswordRight) {
+    if (isPasswordRight === true) {
       const payload = {
         username: username,
       }
-      const token = jwt.sign(payload, 'secretKey')
-      response.send({jwtToken: token})
+      const jwtToken = jwt.sign(payload, 'MY_SECRET_TOKEN')
+      response.send({jwtToken: jwtToken})
     } else {
       response.status(400)
       response.send('Invalid password')
@@ -75,7 +75,7 @@ app.post('/login/', async (request, response) => {
 })
 
 //API 2
-app.get('/states/', authenticationToken, async (request, response) => {
+app.get('/states/', authenticateToken, async (request, response) => {
   const getQuery = `
     SELECT *
     FROM state;
@@ -92,7 +92,7 @@ app.get('/states/', authenticationToken, async (request, response) => {
 })
 
 //API3
-app.get('/states/:stateId/', authenticationToken, async (request, response) => {
+app.get('/states/:stateId/', authenticateToken, async (request, response) => {
   const {stateId} = request.params
   const getQuery = `
     SELECT *
@@ -108,7 +108,7 @@ app.get('/states/:stateId/', authenticationToken, async (request, response) => {
 })
 
 //API4
-app.post('/districts/', authenticationToken, async (request, response) => {
+app.post('/districts/', authenticateToken, async (request, response) => {
   let bodyDtails = request.body
   const {districtName, stateId, cases, cured, active, deaths} = bodyDtails
   const getQuery = `
@@ -128,7 +128,7 @@ app.post('/districts/', authenticationToken, async (request, response) => {
 //// API 5
 app.get(
   '/districts/:districtId/',
-  authenticationToken,
+  authenticateToken,
   async (request, response) => {
     let {districtId} = request.params
     const getQuery = `
@@ -152,12 +152,14 @@ app.get(
 //API6
 app.delete(
   '/districts/:districtId/',
-  authenticationToken,
+  authenticateToken,
   async (request, response) => {
     const {districtId} = request.params
     const getQuery = `
-    DELECTE FROM district
-    WHERE district_id  = '${districtId}';
+    DELETE FROM 
+      district
+    WHERE 
+      district_id  = '${districtId}';
     `
     await db.run(getQuery)
     response.send('District Removed')
@@ -167,21 +169,23 @@ app.delete(
 //API7
 app.put(
   ' /districts/:districtId/',
-  authenticationToken,
+  authenticateToken,
   async (request, response) => {
     const {districtId} = request.params
     const bodyDtails = request.body
     const {districtName, stateId, cases, cured, active, deaths} = bodyDtails
     const getQuery = `
-    UPDATE district
+    UPDATE 
+      district
     SET 
-    district_name = '${districtName}',
-    state_id = '${stateId}',
-    cases = '${cases}',
-    cured ='${cured}',
-    active = '${active}',
-    deaths = '${deaths}'
-    WHERE district_id = '${districtId}'; 
+      district_name = '${districtName}',
+      state_id = '${stateId}',
+      cases = '${cases}',
+      cured ='${cured}',
+      active = '${active}',
+      deaths = '${deaths}'
+    WHERE 
+      district_id = '${districtId}'; 
     `
     await db.run(getQuery)
     response.send('District Details Updated')
@@ -191,7 +195,7 @@ app.put(
 //API8
 app.get(
   '/states/:stateId/stats/',
-  authenticationToken,
+  authenticateToken,
   async (request, response) => {
     const {stateId} = request.params
     const getQuery = `
